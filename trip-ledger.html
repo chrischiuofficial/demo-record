@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>團體旅遊帳簿</title>
+<title>活動帳簿</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
 body{background:#f5f5f7;min-height:100vh;color:#1d1d1f}
@@ -53,17 +53,17 @@ input:focus,select:focus{outline:none;border-color:#534AB7}
 <div class="app">
 
 <div id="page-home">
-  <h1>🧳 旅遊帳簿</h1>
+  <h1>🧾 活動帳簿</h1>
   <div class="card">
-    <h2>建立新旅遊</h2>
-    <input id="new-trip-name" type="text" placeholder="旅遊名稱（例：墾丁三日遊）">
+    <h2>建立活動帳簿</h2>
+    <input id="new-trip-name" type="text" placeholder="活動名稱（例：墾丁三日遊）">
     <input id="creator-name" type="text" placeholder="你的名字">
     <input id="init-members" type="text" placeholder="其他成員，逗號分隔（例：小明,小花）">
-    <button class="btn btn-purple" onclick="createTrip()">建立旅遊房間</button>
+    <button class="btn btn-purple" onclick="createTrip()">建立活動房間</button>
   </div>
   <div class="card">
-    <h2>加入已有旅遊</h2>
-    <input id="join-trip-id" type="text" placeholder="輸入旅遊代碼（Trip ID）">
+    <h2>加入活動</h2>
+    <input id="join-trip-id" type="text" placeholder="輸入活動代碼">
     <input id="join-my-name" type="text" placeholder="你的名字">
     <button class="btn btn-outline" onclick="joinTrip()">加入</button>
   </div>
@@ -76,7 +76,7 @@ input:focus,select:focus{outline:none;border-color:#534AB7}
     <button class="btn" style="width:auto;padding:0 12px;height:34px;font-size:13px;background:#f0f0f5;border:none;border-radius:8px;cursor:pointer" onclick="showHome()">← 返回</button>
   </div>
   <div class="share-box">
-    <div style="font-size:13px;font-weight:600;color:#3C3489">分享給旅伴的 Trip ID</div>
+    <div style="font-size:13px;font-weight:600;color:#3C3489">分享給成員的活動代碼</div>
     <div id="share-id" style="font-size:16px;font-weight:700;color:#3C3489;margin:6px 0"></div>
     <button class="btn" style="width:auto;height:32px;padding:0 14px;font-size:13px;background:#534AB7;color:#fff;border:none;border-radius:8px;cursor:pointer" onclick="copyId()">複製代碼</button>
   </div>
@@ -167,7 +167,7 @@ async function createTrip() {
   const tripName = document.getElementById('new-trip-name').value.trim();
   const creator = document.getElementById('creator-name').value.trim();
   const othersRaw = document.getElementById('init-members').value.trim();
-  if (!tripName || !creator) { showMsg('home-msg', '請填寫旅遊名稱和你的名字', 'err'); return; }
+  if (!tripName || !creator) { showMsg('home-msg', '請填寫活動名稱和你的名字', 'err'); return; }
   const others = othersRaw ? othersRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
   const members = [creator, ...others];
   showMsg('home-msg', '建立中...', '');
@@ -179,11 +179,11 @@ async function createTrip() {
 async function joinTrip() {
   const tripId = document.getElementById('join-trip-id').value.trim();
   const name = document.getElementById('join-my-name').value.trim();
-  if (!tripId || !name) { showMsg('home-msg', '請填寫旅遊代碼和你的名字', 'err'); return; }
+  if (!tripId || !name) { showMsg('home-msg', '請填寫活動代碼和你的名字', 'err'); return; }
   myName = name;
   showMsg('home-msg', '加入中...', '');
   const trip = await api({ action: 'getTrip', tripId });
-  if (trip.error) { showMsg('home-msg', '找不到此旅遊代碼', 'err'); return; }
+  if (trip.error) { showMsg('home-msg', '找不到此活動代碼', 'err'); return; }
   if (!trip.members.includes(name)) await api({ action: 'addMember', tripId, memberName: name });
   await loadTrip(tripId);
 }
@@ -264,12 +264,8 @@ async function saveEdit() {
   showMsg('edit-msg', '儲存中...', '');
   await api({ action: 'deleteExpense', tripId: currentTrip.tripId, expId: editingExpId });
   const res = await api({ action: 'addExpense', tripId: currentTrip.tripId, expName, amount, payer, splitBy: splitBy.join(',') });
-  if (res.expId) {
-    closeEdit();
-    await refreshTrip();
-  } else {
-    showMsg('edit-msg', '儲存失敗，請重試', 'err');
-  }
+  if (res.expId) { closeEdit(); await refreshTrip(); }
+  else showMsg('edit-msg', '儲存失敗，請重試', 'err');
 }
 
 function renderMembers() {
