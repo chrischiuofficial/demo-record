@@ -57,14 +57,14 @@ input:focus,select:focus{outline:none;border-color:#534AB7}
   <div class="card">
     <h2>建立活動帳簿</h2>
     <input id="new-trip-name" type="text" placeholder="活動名稱（例：墾丁三日遊）">
-    <input id="creator-name" type="text" placeholder="你的名字">
+    <input id="creator-name" type="text" placeholder="Name">
     <input id="init-members" type="text" placeholder="其他成員，逗號分隔（例：小明,小花）">
     <button class="btn btn-purple" onclick="createTrip()">建立活動房間</button>
   </div>
   <div class="card">
     <h2>加入活動</h2>
     <input id="join-trip-id" type="text" placeholder="輸入活動代碼">
-    <input id="join-my-name" type="text" placeholder="你的名字">
+    <input id="join-my-name" type="text" placeholder="Name">
     <button class="btn btn-outline" onclick="joinTrip()">加入</button>
   </div>
   <div id="home-msg"></div>
@@ -126,7 +126,6 @@ input:focus,select:focus{outline:none;border-color:#534AB7}
   </div>
 </div>
 
-<!-- 編輯費用 Modal -->
 <div id="edit-modal" class="modal-bg" style="display:none">
   <div class="modal">
     <h2>編輯費用</h2>
@@ -179,7 +178,7 @@ async function createTrip() {
 async function joinTrip() {
   const tripId = document.getElementById('join-trip-id').value.trim();
   const name = document.getElementById('join-my-name').value.trim();
-  if (!tripId || !name) { showMsg('home-msg', '請填寫活動代碼和你的名字', 'err'); return; }
+  if (!tripId || !name) { showMsg('home-msg', '請填寫活動代碼和名字', 'err'); return; }
   myName = name;
   showMsg('home-msg', '加入中...', '');
   const trip = await api({ action: 'getTrip', tripId });
