@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>團體旅遊帳簿</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+body{background:#f5f5f7;min-height:100vh;color:#1d1d1f}
+.app{max-width:480px;margin:0 auto;padding:1rem}
+h1{font-size:20px;font-weight:600;margin-bottom:1.25rem;color:#1d1d1f}
+h2{font-size:16px;font-weight:600;margin-bottom:.75rem}
+.card{background:#fff;border-radius:14px;padding:1.25rem;margin-bottom:1rem;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+input,select{width:100%;height:42px;border:1px solid #d2d2d7;border-radius:10px;padding:0 12px;font-size:15px;margin-bottom:8px;background:#fff;color:#1d1d1f}
+input:focus,select:focus{outline:none;border-color:#534AB7}
+.btn{width:100%;height:44px;border:none;border-radius:10px;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:8px}
+.btn-purple{background:#534AB7;color:#fff}
+.btn-purple:hover{background:#3C3489}
+.btn-outline{background:#fff;color:#534AB7;border:1.5px solid #534AB7}
+.btn-red{background:#fff;color:#A32D2D;border:1px solid #F09595;width:auto;padding:0 14px;height:34px;font-size:13px;border-radius:8px}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:#EEEDFE;color:#3C3489;border-radius:20px;font-size:13px;margin:3px}
+.tag button{background:none;border:none;cursor:pointer;color:#534AB7;font-size:16px}
+.tabs{display:flex;gap:0;margin-bottom:1rem;background:#e5e5ea;border-radius:10px;padding:3px}
+.tab{flex:1;height:34px;border:none;border-radius:8px;font-size:14px;cursor:pointer;background:transparent;color:#666;font-weight:500}
+.tab.active{background:#fff;color:#534AB7;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.exp-item{padding:12px 0;border-bottom:1px solid #f0f0f5}
+.exp-item:last-child{border-bottom:none}
+.exp-row{display:flex;justify-content:space-between;align-items:center}
+.exp-name{font-weight:500;font-size:15px}
+.exp-meta{font-size:13px;color:#666;margin-top:2px}
+.exp-amount{font-size:16px;font-weight:600;color:#534AB7}
+.result-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f5}
+.result-row:last-child{border-bottom:none}
+.badge{padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600}
+.badge-recv{background:#EAF3DE;color:#27500A}
+.badge-pay{background:#FCEBEB;color:#791F1F}
+.badge-zero{background:#F1EFE8;color:#444}
+.settle-item{padding:8px 0;border-bottom:1px solid #f0f0f5;font-size:14px}
+.settle-item:last-child{border-bottom:none}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border:1px solid #d2d2d7;border-radius:20px;font-size:13px;cursor:pointer;margin:3px}
+.pill.active{background:#EEEDFE;border-color:#AFA9EC;color:#3C3489}
+.alert{padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:8px}
+.alert-ok{background:#EAF3DE;color:#27500A}
+.alert-err{background:#FCEBEB;color:#791F1F}
+.share-box{background:#EEEDFE;border-radius:10px;padding:12px;margin-bottom:1rem}
+.share-url{font-size:13px;color:#3C3489;word-break:break-all;margin:4px 0 8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div id="page-home">
+  <h1>🧳 旅遊帳簿</h1>
+  <div class="card">
+    <h2>建立新旅遊</h2>
+    <input id="new-trip-name" type="text" placeholder="旅遊名稱（例：墾丁三日遊）">
+    <input id="creator-name" type="text" placeholder="你的名字">
+    <input id="init-members" type="text" placeholder="其他成員，用逗號分隔（例：小明,小花）">
+    <button class="btn btn-purple" onclick="createTrip()">建立旅遊房間</button>
+  </div>
+  <div class="card">
+    <h2>加入已有旅遊</h2>
+    <input id="join-trip-id" type="text" placeholder="輸入旅遊代碼（Trip ID）">
+    <input id="join-my-name" type="text" placeholder="你的名字">
+    <button class="btn btn-outline" onclick="joinTrip()">加入</button>
+  </div>
+  <div id="home-msg"></div>
+</div>
+
+<div id="page-main" style="display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+    <h1 id="main-title" style="margin:0;font-size:18px">帳簿</h1>
+    <button class="btn" style="width:auto;padding:0 12px;height:34px;font-size:13px;background:#f0f0f5;border:none;border-radius:8px" onclick="showHome()">← 返回</button>
+  </div>
+  <div class="share-box">
+    <div style="font-size:13px;font-weight:600;color:#3C3489">分享給旅伴：Trip ID</div>
+    <div class="share-url" id="share-id"></div>
+    <button class="btn" style="width:auto;height:32px;padding:0 14px;font-size:13px;background:#534AB7;color:#fff;border:none;border-radius:8px" onclick="copyId()">複製代碼</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('expense')">費用</button>
+    <button class="tab" onclick="switchTab('members')">成員</button>
+    <button class="tab" onclick="switchTab('result')">結算</button>
+  </div>
+
+  <div id="tab-expense">
+    <div class="card">
+      <h2>新增費用</h2>
+      <div class="grid2">
+        <input id="exp-name" type="text" placeholder="費用名稱">
+        <input id="exp-amount" type="number" placeholder="金額" min="0">
+      </div>
+      <div style="margin-bottom:6px;font-size:13px;color:#666">由誰付款</div>
+      <select id="exp-payer" style="margin-bottom:10px"></select>
+      <div style="margin-bottom:6px;font-size:13px;color:#666">由哪些人分攤（不選 = 全員）</div>
+      <div id="split-checks" style="margin-bottom:10px"></div>
+      <button class="btn btn-purple" onclick="addExpense()">新增這筆費用</button>
+      <div id="exp-msg"></div>
+    </div>
+    <div class="card">
+      <h2>費用記錄</h2>
+      <div id="expense-list"><div style="color:#999;font-size:13px;text-align:center;padding:1rem">載入中...</div></div>
+    </div>
+  </div>
+
+  <div id="tab-members" style="display:none">
+    <div class="card">
+      <h2>新增成員</h2>
+      <div style="display:flex;gap:8px">
+        <input id="new-member-name" type="text" placeholder="成員姓名" style="margin:0">
+        <button class="btn btn-purple" style="width:auto;padding:0 16px;margin:0" onclick="addMember()">新增</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>目前成員</h2>
+      <div id="member-list"></div>
+    </div>
+  </div>
+
+  <div id="tab-result" style="display:none">
+    <div class="card" id="result-summary"></div>
+    <div class="card" id="result-settle"></div>
+  </div>
+</div>
+
+</div>
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbz42LO1xwNOfAFtYjowFKq9_Ty0JeHWZ_Bs4FZYx8dlqfc3rpAxkXu_MFD44fV4WcWb/exec';
+
+let currentTrip = null;
+let myName = '';
+
+async function api(method, payload) {
+  if (method === 'GET') {
+    const params = new URLSearchParams(payload);
+    const r = await fetch(GAS_URL + '?' + params);
+    return r.json();
+  } else {
+    const r = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return r.json();
+  }
+}
+
+async function createTrip() {
+  const tripName = document.getElementById('new-trip-name').value.trim();
+  const creator = document.getElementById('creator-name').value.trim();
+  const othersRaw = document.getElementById('init-members').value.trim();
+  if (!tripName || !creator) { showMsg('home-msg', '請填寫旅遊名稱和你的名字', 'err'); return; }
+  const others = othersRaw ? othersRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const members = [creator, ...others];
+  showMsg('home-msg', '建立中...', '');
+  const res = await api('POST', { action: 'createTrip', tripName, createdBy: creator, members });
+  if (res.tripId) {
+    myName = creator;
+    await loadTrip(res.tripId);
+  } else {
+    showMsg('home-msg', '建立失敗，請重試', 'err');
+  }
+}
+
+async function joinTrip() {
+  const tripId = document.getElementById('join-trip-id').value.trim();
+  const name = document.getElementById('join-my-name').value.trim();
+  if (!tripId || !name) { showMsg('home-msg', '請填寫旅遊代碼和你的名字', 'err'); return; }
+  myName = name;
+  showMsg('home-msg', '加入中...', '');
+  const trip = await api('GET', { action: 'getTrip', tripId });
+  if (trip.error) { showMsg('home-msg', '找不到此旅遊代碼', 'err'); return; }
+  if (!trip.members.includes(name)) {
+    await api('POST', { action: 'addMember', tripId, memberName: name });
+  }
+  await loadTrip(tripId);
+}
+
+async function loadTrip(tripId) {
+  const trip = await api('GET', { action: 'getTrip', tripId });
+  currentTrip = trip;
+  document.getElementById('page-home').style.display = 'none';
+  document.getElementById('page-main').style.display = '';
+  document.getElementById('main-title').textContent = trip.tripName;
+  document.getElementById('share-id').textContent = trip.tripId;
+  renderAll();
+}
+
+function showHome() {
+  document.getElementById('page-home').style.display = '';
+  document.getElementById('page-main').style.display = 'none';
+  currentTrip = null;
+}
+
+function renderAll() {
+  renderExpenseTab();
+  renderMembers();
+  renderResult();
+}
+
+function renderExpenseTab() {
+  const payer = document.getElementById('exp-payer');
+  payer.innerHTML = currentTrip.members.map(m => `<option value="${m}">${m}</option>`).join('');
+  if (myName && currentTrip.members.includes(myName)) payer.value = myName;
+  const checks = document.getElementById('split-checks');
+  checks.innerHTML = currentTrip.members.map(m =>
+    `<label class="pill" id="spill-${m}"><input type="checkbox" value="${m}" style="display:none" onchange="this.parentElement.classList.toggle('active',this.checked)"> ${m}</label>`
+  ).join('');
+  const list = document.getElementById('expense-list');
+  if (!currentTrip.expenses || currentTrip.expenses.length === 0) {
+    list.innerHTML = '<div style="color:#999;font-size:13px;text-align:center;padding:1rem">尚無費用記錄</div>';
+    return;
+  }
+  list.innerHTML = currentTrip.expenses.map(e =>
+    `<div class="exp-item">
+      <div class="exp-row">
+        <div>
+          <div class="exp-name">${e.expName}</div>
+          <div class="exp-meta">由 ${e.payer} 付 ｜ 分攤：${e.splitBy.join('、')}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="exp-amount">NT$${Number(e.amount).toLocaleString()}</div>
+          <button class="btn-red" onclick="deleteExpense('${e.expId}')">刪除</button>
+        </div>
+      </div>
+    </div>`
+  ).join('');
+}
+
+function renderMembers() {
+  document.getElementById('member-list').innerHTML = currentTrip.members.map(m =>
+    `<div style="padding:8px 0;border-bottom:1px solid #f0f0f5;font-size:15px">${m === myName ? '👤 ' : ''}${m}</div>`
+  ).join('');
+}
+
+function renderResult() {
+  const total = (currentTrip.expenses || []).reduce((s, e) => s + Number(e.amount), 0);
+  const balance = {};
+  currentTrip.members.forEach(m => balance[m] = 0);
+  (currentTrip.expenses || []).forEach(e => {
+    balance[e.payer] = (balance[e.payer] || 0) + Number(e.amount);
+    const share = Number(e.amount) / e.splitBy.length;
+    e.splitBy.forEach(m => { balance[m] = (balance[m] || 0) - share; });
+  });
+  const avg = currentTrip.members.length ? Math.round(total / currentTrip.members.length) : 0;
+  document.getElementById('result-summary').innerHTML =
+    `<h2>個人結算</h2>
+    <div style="font-size:13px;color:#666;margin-bottom:1rem">合計 NT$${total.toLocaleString()}，人均 NT$${avg.toLocaleString()}</div>
+    ${currentTrip.members.map(m => {
+      const b = balance[m] || 0;
+      const paid = (currentTrip.expenses || []).filter(e => e.payer === m).reduce((s,e) => s+Number(e.amount), 0);
+      const badge = b > 0.5 ? `<span class="badge badge-recv">應收 NT$${Math.round(b).toLocaleString()}</span>` :
+                   b < -0.5 ? `<span class="badge badge-pay">應付 NT$${Math.round(-b).toLocaleString()}</span>` :
+                   `<span class="badge badge-zero">已結清</span>`;
+      return `<div class="result-row"><div><div style="font-weight:500">${m}</div><div style="font-size:12px;color:#888">已付 NT$${paid.toLocaleString()}</div></div>${badge}</div>`;
+    }).join('')}`;
+
+  const creditors = [], debtors = [];
+  Object.entries(balance).forEach(([m, b]) => {
+    if (b > 0.5) creditors.push({ m, b });
+    else if (b < -0.5) debtors.push({ m, b: -b });
+  });
+  creditors.sort((a,b) => b.b - a.b);
+  debtors.sort((a,b) => b.b - a.b);
+  const settlements = [];
+  let ci = 0, di = 0;
+  while (ci < creditors.length && di < debtors.length) {
+    const c = creditors[ci], d = debtors[di];
+    const amt = Math.min(c.b, d.b);
+    settlements.push({ from: d.m, to: c.m, amount: Math.round(amt) });
+    c.b -= amt; d.b -= amt;
+    if (c.b < 0.5) ci++;
+    if (d.b < 0.5) di++;
+  }
+  document.getElementById('result-settle').innerHTML =
+    `<h2>最優結算方式</h2>
+    ${settlements.length === 0
+      ? '<div style="color:#888;font-size:14px;padding:.5rem 0">所有人已結清，無需轉帳 🎉</div>'
+      : settlements.map(s =>
+          `<div class="settle-item"><strong>${s.from}</strong> 支付 <strong style="color:#534AB7">NT$${s.amount.toLocaleString()}</strong> 給 <strong>${s.to}</strong></div>`
+        ).join('')
+    }`;
+}
+
+async function addExpense() {
+  const expName = document.getElementById('exp-name').value.trim();
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  const payer = document.getElementById('exp-payer').value;
+  if (!expName || isNaN(amount) || amount <= 0) { showMsg('exp-msg', '請填寫名稱與金額', 'err'); return; }
+  const checked = [...document.querySelectorAll('#split-checks input:checked')].map(i => i.value);
+  const splitBy = checked.length > 0 ? checked : [...currentTrip.members];
+  showMsg('exp-msg', '新增中...', '');
+  const res = await api('POST', { action: 'addExpense', tripId: currentTrip.tripId, expName, amount, payer, splitBy });
+  if (res.expId) {
+    document.getElementById('exp-name').value = '';
+    document.getElementById('exp-amount').value = '';
+    document.querySelectorAll('#split-checks input').forEach(i => { i.checked = false; i.parentElement.classList.remove('active'); });
+    await refreshTrip();
+    showMsg('exp-msg', '已新增', 'ok');
+  } else {
+    showMsg('exp-msg', '新增失敗', 'err');
+  }
+}
+
+async function deleteExpense(expId) {
+  if (!confirm('確定刪除這筆費用？')) return;
+  await api('POST', { action: 'deleteExpense', tripId: currentTrip.tripId, expId });
+  await refreshTrip();
+}
+
+async function addMember() {
+  const name = document.getElementById('new-member-name').value.trim();
+  if (!name) return;
+  await api('POST', { action: 'addMember', tripId: currentTrip.tripId, memberName: name });
+  document.getElementById('new-member-name').value = '';
+  await refreshTrip();
+}
+
+async function refreshTrip() {
+  const trip = await api('GET', { action: 'getTrip', tripId: currentTrip.tripId });
+  currentTrip = trip;
+  renderAll();
+}
+
+function switchTab(t) {
+  ['expense','members','result'].forEach(id => {
+    document.getElementById('tab-'+id).style.display = id===t ? '' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['expense','members','result'][i] === t);
+  });
+}
+
+function copyId() {
+  navigator.clipboard.writeText(currentTrip.tripId).then(() => alert('已複製 Trip ID：' + currentTrip.tripId));
+}
+
+function showMsg(id, msg, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'alert ' + (type==='ok' ? 'alert-ok' : type==='err' ? 'alert-err' : '');
+  el.textContent = msg;
+}
+</script>
+</body>
+</html>
