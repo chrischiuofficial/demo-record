@@ -42,6 +42,8 @@ input:focus,select:focus{outline:none;border-color:#534AB7}
 .alert-err{background:#FCEBEB;color:#791F1F}
 .share-box{background:#EEEDFE;border-radius:10px;padding:12px;margin-bottom:1rem}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.member-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f5}
+.member-row:last-child{border-bottom:none}
 </style>
 </head>
 <body>
@@ -208,8 +210,17 @@ function renderExpenseTab() {
 
 function renderMembers() {
   document.getElementById('member-list').innerHTML = currentTrip.members.map(m =>
-    `<div style="padding:8px 0;border-bottom:1px solid #f0f0f5;font-size:15px">${m === myName ? '👤 ' : ''}${m}</div>`
+    `<div class="member-row">
+      <div style="font-size:15px">${m === myName ? '👤 ' : ''}${m}</div>
+      <button class="btn-red" onclick="deleteMember('${m}')">刪除</button>
+    </div>`
   ).join('');
+}
+
+async function deleteMember(name) {
+  if (!confirm('確定刪除成員「' + name + '」？')) return;
+  await api({ action: 'deleteMember', tripId: currentTrip.tripId, memberName: name });
+  await refreshTrip();
 }
 
 function renderResult() {
