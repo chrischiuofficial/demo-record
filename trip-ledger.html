@@ -18,15 +18,15 @@ input:focus,select:focus{outline:none;border-color:#534AB7}
 .btn-purple:hover{background:#3C3489}
 .btn-outline{background:#fff;color:#534AB7;border:1.5px solid #534AB7}
 .btn-red{background:#fff;color:#A32D2D;border:1px solid #F09595;width:auto;padding:0 14px;height:34px;font-size:13px;border-radius:8px;cursor:pointer}
+.btn-edit{background:#fff;color:#534AB7;border:1px solid #AFA9EC;width:auto;padding:0 14px;height:34px;font-size:13px;border-radius:8px;cursor:pointer}
 .tabs{display:flex;margin-bottom:1rem;background:#e5e5ea;border-radius:10px;padding:3px}
 .tab{flex:1;height:34px;border:none;border-radius:8px;font-size:14px;cursor:pointer;background:transparent;color:#666;font-weight:500}
 .tab.active{background:#fff;color:#534AB7;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .exp-item{padding:12px 0;border-bottom:1px solid #f0f0f5}
 .exp-item:last-child{border-bottom:none}
-.exp-row{display:flex;justify-content:space-between;align-items:center}
 .exp-name{font-weight:500;font-size:15px}
 .exp-meta{font-size:13px;color:#666;margin-top:2px}
-.exp-amount{font-size:16px;font-weight:600;color:#534AB7}
+.exp-amount{font-size:16px;font-weight:600;color:#534AB7;white-space:nowrap}
 .result-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f5}
 .result-row:last-child{border-bottom:none}
 .badge{padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600}
@@ -44,6 +44,9 @@ input:focus,select:focus{outline:none;border-color:#534AB7}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .member-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f5}
 .member-row:last-child{border-bottom:none}
+.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:999;padding:1rem}
+.modal{background:#fff;border-radius:16px;padding:1.5rem;width:100%;max-width:440px}
+.modal h2{margin-bottom:1rem}
 </style>
 </head>
 <body>
@@ -123,12 +126,29 @@ input:focus,select:focus{outline:none;border-color:#534AB7}
   </div>
 </div>
 
+<!-- 編輯費用 Modal -->
+<div id="edit-modal" class="modal-bg" style="display:none">
+  <div class="modal">
+    <h2>編輯費用</h2>
+    <input id="edit-exp-name" type="text" placeholder="費用名稱">
+    <input id="edit-exp-amount" type="number" placeholder="金額" min="0">
+    <div style="font-size:13px;color:#666;margin-bottom:4px">由誰付款</div>
+    <select id="edit-exp-payer" style="margin-bottom:10px"></select>
+    <div style="font-size:13px;color:#666;margin-bottom:4px">由哪些人分攤（不選＝全員）</div>
+    <div id="edit-split-checks" style="margin-bottom:12px"></div>
+    <button class="btn btn-purple" onclick="saveEdit()">儲存修改</button>
+    <button class="btn btn-outline" onclick="closeEdit()">取消</button>
+    <div id="edit-msg"></div>
+  </div>
+</div>
+
 </div>
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbz42LO1xwNOfAFtYjowFKq9_Ty0JeHWZ_Bs4FZYx8dlqfc3rpAxkXu_MFD44fV4WcWb/exec';
 
 let currentTrip = null;
 let myName = '';
+let editingExpId = null;
 
 function api(params) {
   return new Promise((resolve, reject) => {
@@ -198,14 +218,58 @@ function renderExpenseTab() {
     list.innerHTML = '<div style="color:#999;font-size:13px;text-align:center;padding:1rem">尚無費用記錄</div>'; return;
   }
   list.innerHTML = currentTrip.expenses.map(e =>
-    `<div class="exp-item"><div class="exp-row">
-      <div><div class="exp-name">${e.expName}</div><div class="exp-meta">由 ${e.payer} 付｜分攤：${e.splitBy.join('、')}</div></div>
-      <div style="display:flex;align-items:center;gap:8px">
+    `<div class="exp-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1;min-width:0;margin-right:8px">
+          <div class="exp-name">${e.expName}</div>
+          <div class="exp-meta">由 ${e.payer} 付｜分攤：${e.splitBy.join('、')}</div>
+        </div>
         <div class="exp-amount">NT$${Number(e.amount).toLocaleString()}</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn-edit" onclick="openEdit('${e.expId}')">編輯</button>
         <button class="btn-red" onclick="deleteExpense('${e.expId}')">刪除</button>
       </div>
-    </div></div>`
+    </div>`
   ).join('');
+}
+
+function openEdit(expId) {
+  const e = currentTrip.expenses.find(x => x.expId === expId);
+  if (!e) return;
+  editingExpId = expId;
+  document.getElementById('edit-exp-name').value = e.expName;
+  document.getElementById('edit-exp-amount').value = e.amount;
+  const payer = document.getElementById('edit-exp-payer');
+  payer.innerHTML = currentTrip.members.map(m => `<option value="${m}">${m}</option>`).join('');
+  payer.value = e.payer;
+  document.getElementById('edit-split-checks').innerHTML = currentTrip.members.map(m =>
+    `<label class="pill ${e.splitBy.includes(m) ? 'active' : ''}"><input type="checkbox" value="${m}" style="display:none" ${e.splitBy.includes(m) ? 'checked' : ''} onchange="this.parentElement.classList.toggle('active',this.checked)"> ${m}</label>`
+  ).join('');
+  document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function closeEdit() {
+  document.getElementById('edit-modal').style.display = 'none';
+  editingExpId = null;
+}
+
+async function saveEdit() {
+  const expName = document.getElementById('edit-exp-name').value.trim();
+  const amount = parseFloat(document.getElementById('edit-exp-amount').value);
+  const payer = document.getElementById('edit-exp-payer').value;
+  if (!expName || isNaN(amount) || amount <= 0) { showMsg('edit-msg', '請填寫名稱與金額', 'err'); return; }
+  const checked = [...document.querySelectorAll('#edit-split-checks input:checked')].map(i => i.value);
+  const splitBy = checked.length > 0 ? checked : [...currentTrip.members];
+  showMsg('edit-msg', '儲存中...', '');
+  await api({ action: 'deleteExpense', tripId: currentTrip.tripId, expId: editingExpId });
+  const res = await api({ action: 'addExpense', tripId: currentTrip.tripId, expName, amount, payer, splitBy: splitBy.join(',') });
+  if (res.expId) {
+    closeEdit();
+    await refreshTrip();
+  } else {
+    showMsg('edit-msg', '儲存失敗，請重試', 'err');
+  }
 }
 
 function renderMembers() {
